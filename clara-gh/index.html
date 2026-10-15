@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CLARA Persona Space</title>
+<style>
+/* Layout: a lattice explorer (their own diagram, extended to every profile) beside a profile list, then counts and the reference tables */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --fg:#111111; --muted:#666666; --line:#111111; --hair:#d6d6d6; --empty:#f1f1f1;
+  --accent:#e3000f; --accent-ink:#ffffff; --accent-soft:#fde6e7; --flow:#111111;
+  --typ:#d4d4d4; --low:#8a8a8a; --lowest:#111111; --excl:#bdbdbd;
+  --display:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --body:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d0d0d; --surface:#0d0d0d; --fg:#f2f2f2; --muted:#9a9a9a; --line:#f2f2f2; --hair:#333333; --empty:#1c1c1c;
+  --accent:#ff3b30; --accent-ink:#0d0d0d; --accent-soft:#3a1514; --flow:#f2f2f2;
+  --typ:#3a3a3a; --low:#8a8a8a; --lowest:#f2f2f2; --excl:#4a4a4a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d0d0d; --surface:#0d0d0d; --fg:#f2f2f2; --muted:#9a9a9a; --line:#f2f2f2; --hair:#333333; --empty:#1c1c1c;
+  --accent:#ff3b30; --accent-ink:#0d0d0d; --accent-soft:#3a1514; --flow:#f2f2f2;
+  --typ:#3a3a3a; --low:#8a8a8a; --lowest:#f2f2f2; --excl:#4a4a4a; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;-webkit-font-smoothing:antialiased;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-block:40px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:40px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(40px,7vw,84px);font-weight:700;letter-spacing:-.035em;line-height:.95}
+h2{letter-spacing:-.01em}
+.lede{font-style:italic}
+.num,.chip,.tag,.role,.ct{font-variant-numeric:tabular-nums}
+h2{font-size:clamp(22px,2.6vw,30px);font-weight:700;letter-spacing:-.02em}
+.lede{color:var(--muted);max-width:68ch;margin:8px 0 0}
+.eyebrow{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--fg)}
+section{display:grid;gap:14px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* explorer */
+.explorer{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.explorer{grid-template-columns:1fr}}
+.panel{background:none;border:0;border-top:2px solid var(--line);padding:14px 0 0;min-width:0}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:0;overflow:hidden}
+.seg button,.btn{font:500 13px var(--body);background:var(--surface);color:var(--fg);border:0;padding:7px 12px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.btn{border:1px solid var(--line);font-weight:700;border-radius:0}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.match{margin-left:auto;font-size:13px;color:var(--muted)}
+.match b{color:var(--fg);font-family:var(--mono)}
+.svgbox{overflow-x:auto;margin-top:12px}
+svg text{fill:var(--fg)}
+.cell{cursor:pointer}
+.cell rect{fill:var(--empty);stroke:transparent;stroke-width:2;transition:fill .15s}
+.cell:hover rect{stroke:var(--accent)}
+.cell.pinned rect{stroke:var(--fg);fill:var(--bg)}
+.cell.sel rect{fill:var(--accent)}
+.cell.sel text{fill:var(--accent-ink)}
+.cell.na{cursor:not-allowed}
+.cell.na rect{fill:url(#hatch)}
+.cell .lv{font:600 14px var(--body)}
+.cell .ct{font:400 11px var(--mono);fill:var(--muted)}
+.cell.sel .ct{fill:var(--accent-ink)}
+.rowlab{font:500 13px var(--body)}
+.collab{font:400 13px var(--mono);fill:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+/* list */
+.list{max-height:430px;overflow-y:auto;display:grid;gap:0;margin-top:10px;border-top:1px solid var(--hair);padding-top:8px}
+.item{border-bottom:1px solid var(--hair)!important;display:grid;grid-template-columns:52px auto 1fr auto;gap:10px;align-items:center;padding:5px 8px;border-radius:0;cursor:pointer;border:0;background:none;color:var(--fg);font:inherit;text-align:left}
+.item:hover{background:var(--empty)}
+.item[aria-current="true"]{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.strip{display:flex;gap:2px}
+.strip i{width:14px;height:14px;border-radius:0;display:block}
+.c0{background:var(--typ)} .c1{background:var(--low)} .c2{background:var(--lowest)}
+.item .pat{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font:500 11px var(--mono);padding:2px 6px;border-radius:0;border:1px solid var(--line);color:var(--muted)}
+.tag.ok{color:var(--fg);border-color:currentColor}
+.tag.no{color:var(--lowest);border-color:currentColor}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:0;display:inline-block}
+.detail{display:grid;gap:10px}
+.detail h3{font:700 18px var(--display);margin:0}
+.detail ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.why{font-size:13px;padding:6px 0 6px 10px;border-left:3px solid var(--accent)}
+/* charts */
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:20px}
+.chart-cap{font-size:13px;color:var(--muted);margin:0}
+/* tables */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:13.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--hair)}
+th{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+td:first-child{font-weight:600}
+.lvl{font-family:var(--mono);font-size:12.5px}
+.describe{display:grid;gap:12px}
+.describe label{font-weight:600}
+textarea{font:18px/1.45 var(--body);color:var(--fg);background:var(--bg);border:0;border-bottom:2px solid var(--line);border-radius:0;padding:10px 12px;width:100%;box-sizing:border-box;resize:vertical}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn:disabled{opacity:.55;cursor:default}
+.examples{display:flex;flex-wrap:wrap;gap:6px}
+.ex{font:italic 13px var(--body);border:1px solid var(--hair)!important;background:none;color:var(--fg);border:0;border-radius:0;padding:5px 11px;cursor:pointer;text-align:left}
+.rec{display:grid;gap:14px;border-top:1px solid var(--line);padding-top:14px}
+.rec[hidden]{display:none}
+.reading{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:8px}
+.rd{border:0;border-top:1px solid var(--hair);border-radius:0;padding:8px 10px;display:grid;gap:4px;min-width:0}
+.rd b{font-size:13px}
+.rd small{color:var(--muted);font-size:12.5px}
+.chips{display:flex;gap:4px}
+.chip{font:500 11.5px var(--mono);padding:2px 7px;border-radius:0;border:1px solid var(--line);color:var(--muted)}
+.chip.in{color:var(--fg);border-color:var(--fg)}
+.chip.best{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.picks{display:grid;gap:2px}
+.role{font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--accent);white-space:nowrap}
+.item.pick{grid-template-columns:52px auto 1fr auto}
+.banner{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;margin-top:10px;padding:6px 10px;border-left:3px solid var(--accent);background:var(--accent-soft)}
+.banner[hidden]{display:none}
+.linkbtn{font:700 13px var(--body);background:none;border:0;color:var(--fg);cursor:pointer;padding:0;text-decoration:underline}
+.rules{display:grid;gap:8px;margin:0;padding-left:20px;max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">CLARA · Cognitive persona profiles</div>
+    <h1>CLARA Persona Space</h1>
+    <p class="lede">Every persona takes one level on every dimension. The lattice shows all of them at once: line thickness is how many profiles pass between two levels. Click a level to filter, click a profile to trace it.</p>
+  </header>
+
+  <section aria-labelledby="ds-h">
+    <h2 id="ds-h">Describe the person you have in mind</h2>
+    <div class="panel describe">
+      <label for="desc">One line about the person</label>
+      <textarea id="desc" rows="2" placeholder="e.g. Sharp in conversation, but forgets what we talked about last week and gets lost in multi-step online forms"></textarea>
+      <div class="examples" aria-label="Example descriptions">
+        <button class="ex">Retired teacher, slow with screens but still sharp; forgets details between sessions</button>
+        <button class="ex">Mild cognitive impairment: memory going, everything else mostly fine</button>
+        <button class="ex">Moderate dementia, needs help from her daughter for most tasks</button>
+        <button class="ex">Struggles with multi-step tasks and finding words, memory OK</button>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="go">Recommend profiles</button>
+        <button class="btn" id="stop" hidden>Stop</button>
+        <span id="status" class="hint" style="margin:0" role="status"></span>
+      </div>
+      <div class="rec" id="rec" hidden></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ex-h">
+    <h2 id="ex-h">Explore the profiles</h2>
+    <div class="explorer">
+      <div class="panel">
+        <div class="controls">
+          <div class="seg" role="group" aria-label="Which profiles">
+            <button id="setP" aria-pressed="true">Plausible (207)</button>
+            <button id="setA" aria-pressed="false">All (486)</button>
+            <button id="setX" aria-pressed="false">Excluded (279)</button>
+          </div>
+          <button class="btn" id="clear">Clear filters</button>
+          <span class="match"><b id="nMatch">207</b> profiles match</span>
+        </div>
+        <div class="banner" id="banner" hidden><span id="bannerText"></span><button class="linkbtn" id="unfit">Show all again</button></div>
+        <div class="svgbox"><svg id="lattice" viewBox="0 0 640 432" role="img" aria-label="Lattice of dimensions by level with profile flows"></svg></div>
+        <p class="hint">Attention has no Low level: the counting task only separates the most impaired.</p>
+      </div>
+      <div class="panel">
+        <div class="detail" id="detail"></div>
+        <div class="legend" style="margin-top:12px">
+          <span><i class="c0"></i>Typical</span><span><i class="c1"></i>Low</span><span><i class="c2"></i>Lowest</span>
+          <span class="num">PS · WM · EF · EP · LG · AT</span>
+        </div>
+        <div class="list" id="list" role="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ct-h">
+    <h2 id="ct-h">How many combinations</h2>
+    <div class="charts">
+      <div class="panel"><p class="chart-cap">Raw combinations versus the plausible subset, by which dimensions are included</p><svg id="funnel" viewBox="0 0 520 250" role="img" aria-label="Combination counts"></svg></div>
+      <div class="panel"><p class="chart-cap">All 486 six-dimension profiles by impairment score (Typical 0, Low 1, Lowest 2, summed)</p><svg id="hist" viewBox="0 0 520 250" role="img" aria-label="Profiles by impairment score"></svg></div>
+    </div>
+    <div class="panel">
+      <div class="eyebrow" style="margin-bottom:8px">Plausibility rules</div>
+      <ol class="rules">
+        <li><b>R1.</b> Executive function can't be two levels better than working memory, because the same task measures both.</li>
+        <li><b>R2.</b> Delayed (episodic) recall can't be better than immediate recall.</li>
+        <li><b>R3.</b> Attention is Lowest only when at least two core dimensions are also Lowest.</li>
+        <li><b>R4.</b> One Lowest with every other dimension Typical is excluded, except Lowest episodic recall (the amnestic pattern).</li>
+      </ol>
+    </div>
+  </section>
+
+  <section aria-labelledby="map-h">
+    <h2 id="map-h">Dimensions, tests and cutoffs</h2>
+    <div class="panel tbl">
+      <table>
+        <thead><tr><th>Dimension</th><th>Primary test</th><th>Supporting</th><th>Typical</th><th>Low</th><th>Lowest</th></tr></thead>
+        <tbody id="mapBody"></tbody>
+      </table>
+    </div>
+    <p class="hint">Not counted as dials: hearing and vision (no measure yet; hearing would add ×3), memory confidence and mood (two-level modifiers), vocabulary (held at Typical) and overall severity (a label, not a dial). Cutoffs are starting points to recalibrate against real data.</p>
+  </section>
+</div>
+
+<script>
+const DIMS=[
+ {k:"PS",name:"Processing speed",test:"Timed number-connecting task; on-screen clicking and typing speed",sup:"Verbal fluency",cut:["Within 1 SD of age norm","−1 to −2 SD","2+ SD below, or not finished"],
+  beh:["","Reads and replies more slowly; may time out","Needs much more time per step; misses timed prompts"]},
+ {k:"WM",name:"Working memory",test:"Immediate word recall",sup:"Serial subtraction",cut:["≥ 5 words","3–4 words","≤ 2 words"],
+  beh:["","Keeps about 3–4 items from one message","Keeps 1–2 items; long messages lose detail"]},
+ {k:"EF",name:"Executive function",test:"Serial subtraction; number–letter switching task",sup:"Number series, numeracy",cut:["Strong on both tasks","Mid-range on either","Very low on either"],
+  beh:["","Tracks 2–3 dependent steps; switching is effortful","Loses track of multi-step tasks; can't switch between tasks"]},
+ {k:"EP",name:"Episodic recall / retention",test:"Delayed word recall",sup:"Immediate minus delayed recall; family-member reports",cut:["≥ 4 words","2–3 words","0–1 words"],
+  beh:["","Needs a recap of earlier turns","Forgets earlier turns; needs everything restated"]},
+ {k:"LG",name:"Language",test:"Verbal fluency (naming in 60 s)",sup:"—",cut:["≥ 15","11–14","≤ 10"],
+  beh:["","Pauses for words; vaguer replies","Describes instead of naming; short, vague replies"]},
+ {k:"AT",name:"Attention",test:"Counting backward",sup:"Serial subtraction",cut:["Correct (1st or 2nd try)","not separable","Failed twice"],
+  beh:["","","Loses the thread; distracted mid-task"]},
+];
+const LV=["Typical","Low","Lowest"];
+// build in the same order as the workbook so IDs match
+const P=[];
+for(let a=0;a<3;a++)for(let b=0;b<3;b++)for(let c=0;c<3;c++)for(let d=0;d<3;d++)for(let e=0;e<3;e++)for(const f of [0,2]){
+  const r=[a,b,c,d,e,f]; const why=reasons(r);
+  const s=r.reduce((x,y)=>x+y,0), n2=r.filter(x=>x===2).length, mx=Math.max(...r);
+  const pat=mx===0?"Typical-range":mx===1?"Mild (all ≤ Low)":(r.slice(0,5).filter(x=>x===2).length>=3?"Severe (≥3 Lowest)":"Mixed / uneven");
+  P.push({id:"P"+String(P.length+1).padStart(3,"0"),r,score:s,pat,ok:why.length===0,why});
+}
+function reasons(r){const [ps,wm,ef,ep,lg,at]=r,w=[];
+  if(wm-ef>=2)w.push("R1: executive function two levels better than working memory");
+  if(ep<wm)w.push("R2: delayed recall better than immediate recall");
+  if(at===2&&[ps,wm,ef,ep].filter(x=>x===2).length<2)w.push("R3: Lowest attention without broad impairment");
+  const v=[ps,wm,ef,ep,lg];
+  v.forEach((x,i)=>{if(x===2&&i!==3&&v.filter((y,j)=>j!==i&&y===0).length>=4)w.push("R4: one isolated Lowest ("+DIMS[i].name+")")});
+  return w;}
+
+let set="P",pins={},selId=null,fit=null; // fit: Set of profile ids from a description
+const $=id=>document.getElementById(id);
+const pool=()=>P.filter(p=>set==="A"||(set==="P"?p.ok:!p.ok));
+const matches=()=>pool().filter(p=>(!fit||fit.has(p.id))&&Object.entries(pins).every(([i,l])=>p.r[i]===+l));
+const NS="http://www.w3.org/2000/svg";
+const el=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e};
+// lattice geometry: columns Lowest, Low, Typical (as in the original sketch)
+const COLX={2:220,1:350,0:480},CW=116,CH=44,Y0=58,RH=62;
+const cy=i=>Y0+i*RH;
+
+function drawLattice(){
+  const svg=$("lattice");svg.innerHTML="";
+  const defs=el("defs",{});const pat=el("pattern",{id:"hatch",width:6,height:6,patternUnits:"userSpaceOnUse",patternTransform:"rotate(45)"});
+  pat.append(el("rect",{width:6,height:6,fill:"var(--empty)"}),el("line",{x1:0,y1:0,x2:0,y2:6,stroke:"var(--line)","stroke-width":2}));defs.append(pat);svg.append(defs);
+  [[2,"Lowest"],[1,"Low"],[0,"Typical"]].forEach(([l,t])=>svg.append(el("text",{x:COLX[l],y:24,"text-anchor":"middle",class:"collab"},t)));
+  const M=matches(), sel=P.find(p=>p.id===selId);
+  // aggregated flows between adjacent dimensions
+  const g=el("g",{});let max=1;const agg={};
+  M.forEach(p=>{for(let i=0;i<5;i++){const k=i+"-"+p.r[i]+"-"+p.r[i+1];agg[k]=(agg[k]||0)+1;max=Math.max(max,agg[k])}});
+  for(const k in agg){const [i,a,b]=k.split("-").map(Number);
+    g.append(el("line",{x1:COLX[a],y1:cy(i)+CH/2,x2:COLX[b],y2:cy(i+1)-CH/2+CH/2-CH/2+0,stroke:"var(--flow)","stroke-width":(1+11*agg[k]/max).toFixed(1),"stroke-opacity":.28,"stroke-linecap":"round"}));}
+  svg.append(g);
+  if(sel){const pts=sel.r.map((l,i)=>COLX[l]+","+(cy(i))).join(" ");
+    svg.append(el("polyline",{points:pts,fill:"none",stroke:"var(--accent)","stroke-width":3}));}
+  DIMS.forEach((d,i)=>{
+    svg.append(el("text",{x:8,y:cy(i)+5,class:"rowlab"},d.name.replace(" / retention","")));
+    [2,1,0].forEach(l=>{
+      const na=(i===5&&l===1), cnt=M.filter(p=>p.r[i]===l).length;
+      const c=el("g",{class:"cell"+(na?" na":"")+(pins[i]==l?" pinned":"")+(sel&&sel.r[i]===l?" sel":""),tabindex:na?-1:0,role:"button","aria-label":d.name+" "+LV[l]+", "+cnt+" profiles"});
+      c.append(el("rect",{x:COLX[l]-CW/2,y:cy(i)-CH/2,width:CW,height:CH,rx:0}));
+      if(!na){c.append(el("text",{x:COLX[l],y:cy(i)-1,"text-anchor":"middle",class:"lv"},LV[l]));
+        c.append(el("text",{x:COLX[l],y:cy(i)+14,"text-anchor":"middle",class:"ct"},cnt+" profiles"));
+        const act=()=>{if(pins[i]==l)delete pins[i];else pins[i]=l;render()};
+        c.addEventListener("click",act);c.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();act()}});}
+      svg.append(c);
+    });
+  });
+}
+// flow lines go between cell centers; cells are drawn on top so lines appear to connect edges
+function strip(r){return '<span class="strip" aria-hidden="true">'+r.map(x=>'<i class="c'+x+'"></i>').join("")+"</span>"}
+function drawList(){
+  const M=matches().slice().sort((a,b)=>a.score-b.score||a.id.localeCompare(b.id));
+  $("nMatch").textContent=M.length;
+  $("list").innerHTML=M.map(p=>`<button class="item" role="listitem" data-id="${p.id}" aria-current="${p.id===selId}"><span class="num">${p.id}</span>${strip(p.r)}<span class="pat">${p.pat} · score ${p.score}</span><span class="tag ${p.ok?"ok":"no"}">${p.ok?"plausible":"excluded"}</span></button>`).join("")||'<p class="hint">No profiles match these filters.</p>';
+  $("list").querySelectorAll(".item").forEach(b=>b.addEventListener("click",()=>{selId=selId===b.dataset.id?null:b.dataset.id;render()}));
+}
+function drawDetail(){
+  const p=P.find(x=>x.id===selId);
+  if(!p){$("detail").innerHTML='<h3>No profile selected</h3><p class="hint" style="margin:0">Click a level in the lattice to filter, then pick a profile from the list to trace it and see how the persona would behave. Click it again to deselect.</p>';return}
+  const beh=p.r.map((l,i)=>l&&DIMS[i].beh[l]?`<li><b>${DIMS[i].name}</b> (${LV[l]}): ${DIMS[i].beh[l]}</li>`:"").join("");
+  $("detail").innerHTML=`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><div class="eyebrow">${p.pat} · impairment score ${p.score} / 11</div><button class="linkbtn" id="desel">Deselect</button></div><h3>${p.id} ${strip(p.r)}</h3>
+  <div class="why">${p.ok?"Plausible: passes all four rules.":"Excluded by "+p.why.join("; ")+"."}</div>
+  ${beh?`<ul>${beh}</ul>`:'<p class="hint" style="margin:0">Typical on every dimension: the baseline control persona.</p>'}`;
+}
+function render(){["P","A","X"].forEach(s=>$("set"+s).setAttribute("aria-pressed",set===s));drawLattice();drawList();drawDetail();
+  const d=$("desel");if(d)d.onclick=()=>{selId=null;render()};
+  $("banner").hidden=!fit;if(fit)$("bannerText").textContent="Showing the "+fit.size+" plausible profiles that fit your description.";}
+$("unfit").addEventListener("click",()=>{fit=null;render()});
+["P","A","X"].forEach(s=>$("set"+s).addEventListener("click",()=>{set=s;render()}));
+$("clear").addEventListener("click",()=>{pins={};selId=null;render()});
+
+// counts chart
+(function(){const svg=$("funnel");const rows=[["Core 4",81,49],["+ Language, Attention",486,207],["+ Hearing",1458,621]];
+  const X0=150,W=340,max=1458;
+  rows.forEach(([lab,raw,ok],i)=>{const y=24+i*74;
+    svg.append(el("text",{x:0,y:y+14,style:"font:500 13px var(--body)"},lab));
+    svg.append(el("rect",{x:X0,y:y,width:Math.max(2,W*raw/max),height:20,rx:0,fill:"var(--empty)",stroke:"var(--line)"}));
+    svg.append(el("rect",{x:X0,y:y+24,width:Math.max(2,W*ok/max),height:20,rx:0,fill:"var(--accent)"}));
+    svg.append(el("text",{x:X0+Math.max(2,W*raw/max)+6,y:y+15,style:"font:400 12px var(--mono)"},raw+" raw"));
+    svg.append(el("text",{x:X0+Math.max(2,W*ok/max)+6,y:y+39,style:"font:400 12px var(--mono)"},ok+" plausible"));
+  });
+  svg.append(el("text",{x:0,y:244,style:"font:400 11px var(--body);fill:var(--muted)"},"Adding both 2-level modifiers multiplies each count by 4 (5,832 raw)."));
+})();
+// histogram
+(function(){const svg=$("hist");const ok=Array(12).fill(0),no=Array(12).fill(0);P.forEach(p=>(p.ok?ok:no)[p.score]++);
+  const max=Math.max(...ok.map((v,i)=>v+no[i])),X0=36,BW=36,H=180,B=210;
+  [0,20,40,60,80].filter(t=>t<=max+5).forEach(t=>{const y=B-H*t/max;svg.append(el("line",{x1:X0,x2:X0+12*BW,y1:y,y2:y,stroke:"var(--line)"}));svg.append(el("text",{x:X0-6,y:y+4,"text-anchor":"end",style:"font:400 11px var(--mono);fill:var(--muted)"},t))});
+  for(let s=0;s<12;s++){const x=X0+s*BW+5,h1=H*ok[s]/max,h2=H*no[s]/max;
+    svg.append(el("rect",{x,y:B-h1,width:BW-10,height:h1,fill:"var(--accent)"}));
+    svg.append(el("rect",{x,y:B-h1-h2,width:BW-10,height:h2,fill:"var(--excl)","fill-opacity":.55}));
+    svg.append(el("text",{x:x+(BW-10)/2,y:B+16,"text-anchor":"middle",style:"font:400 11px var(--mono)"},s));}
+  svg.append(el("rect",{x:X0+8*BW-70,y:4,width:10,height:10,fill:"var(--accent)"}));svg.append(el("text",{x:X0+8*BW-55,y:13,style:"font:400 12px var(--body)"},"Plausible"));
+  svg.append(el("rect",{x:X0+8*BW+20,y:4,width:10,height:10,fill:"var(--excl)","fill-opacity":.55}));svg.append(el("text",{x:X0+8*BW+35,y:13,style:"font:400 12px var(--body)"},"Excluded"));
+  svg.append(el("text",{x:X0+6*BW,y:244,"text-anchor":"middle",style:"font:400 11px var(--body);fill:var(--muted)"},"Impairment score"));
+})();
+$("mapBody").innerHTML=DIMS.map(d=>`<tr><td>${d.name}</td><td>${d.test}</td><td>${d.sup}</td>${d.cut.map(c=>`<td class="lvl">${c}</td>`).join("")}</tr>`).join("");
+
+// ---------- Describe a person -> recommended profiles ----------
+const KEYS=DIMS.map(d=>d.k);
+// Address of your Cloudflare Worker (see README). It holds the Anthropic API key; the key never ships in this page.
+// Leave empty to use the keyword fallback only.
+const CLAUDE_PROXY_URL="";
+let ctl=null;
+
+async function askClaude(prompt,signal){
+  const r=await fetch(CLAUDE_PROXY_URL,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({prompt}),signal});
+  if(r.status===429)throw{code:"rate_limited"};
+  if(!r.ok)throw{code:"upstream_error"};
+  const data=await r.json();
+  const text=(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+  const a=text.indexOf("{"),b=text.lastIndexOf("}");
+  if(a<0||b<a)throw{code:"invalid_json"};
+  try{return JSON.parse(text.slice(a,b+1))}catch(e){throw{code:"invalid_json"}}
+}
+
+function promptFor(desc){
+  const dimText=DIMS.map(d=>`${d.k} = ${d.name}. Low: ${d.beh[1]||"(not used)"}. Lowest: ${d.beh[2]}.`).join("\n");
+  return `You help a researcher choose cognitive personas of older adults for testing an AI assistant (the CLARA project).
+Map the description below onto six dimensions. Levels: 0 = Typical, 1 = Low, 2 = Lowest.
+${dimText}
+Attention (AT) only has levels 0 and 2; 2 means the person is broadly impaired.
+For each dimension give "best" (most likely level) and "levels" (every level consistent with the description).
+If the description says nothing about a dimension, use levels [0,1] with best 0, unless the overall severity implies otherwise (for example, dementia implies Low or Lowest on most dimensions).
+Plausibility rules the profiles must follow: delayed recall (EP) is never better than working memory (WM); executive function (EF) is never two levels better than WM.
+Reply with only JSON in this shape:
+{"summary":"one plain sentence describing who this is","dims":{"PS":{"best":0,"levels":[0,1],"why":"few words"},"WM":{...},"EF":{...},"EP":{...},"LG":{...},"AT":{...}}}
+
+Description: ${desc}`;
+}
+
+function clean(out){
+  const dims={};
+  KEYS.forEach((k,i)=>{
+    const d=out?.dims?.[k]||{};
+    const ok=i===5?[0,2]:[0,1,2];
+    let lv=Array.isArray(d.levels)?[...new Set(d.levels.map(Number))].filter(x=>ok.includes(x)):[];
+    let best=Number(d.best); if(!ok.includes(best))best=lv[0]??0;
+    if(!lv.includes(best))lv.push(best);
+    dims[k]={best,levels:lv.sort(),why:String(d.why||"").slice(0,140)};
+  });
+  return {summary:String(out?.summary||"").slice(0,300),dims};
+}
+
+// keyword fallback when Claude is not available in this view
+function keywordRead(desc){
+  const t=desc.toLowerCase();
+  const sev=/dementia|severe|moderate|can't|cannot|needs help|unable|alzheimer/.test(t)?2:1;
+  const dims={};KEYS.forEach(k=>dims[k]={best:0,levels:[0,1],why:"Not mentioned"});
+  const hit=(k,re,why,lvl=sev)=>{if(re.test(t))dims[k]={best:lvl,levels:lvl===2?[1,2]:[1],why}};
+  hit("PS",/slow|takes (a )?long|time out|reaction|speed/,"Mentions slowness");
+  hit("WM",/hold|keep track|lose(s)? track|instructions|remember (what|the) (i|you) (just )?said|working memory/,"Trouble holding information");
+  hit("EF",/multi-?step|plan|organi[sz]|switch|confus|steps|forms|complex/,"Trouble with multi-step tasks");
+  hit("EP",/forget|forgets|memory|recall|remember|mci|alzheimer/,"Memory problems");
+  hit("LG",/word|names?\b|naming|vague|tip of/,"Word-finding trouble");
+  hit("AT",/distract|attention|focus|wander/,"Attention problems",2);
+  if(/dementia|alzheimer/.test(t))KEYS.slice(0,5).forEach(k=>{if(dims[k].best===0)dims[k]={best:1,levels:[1,2],why:"Implied by dementia"}});
+  if(/memory ok|memory is fine|memory fine/.test(t)){dims.EP={best:0,levels:[0],why:"Memory described as fine"};}
+  if(/sharp|otherwise fine|everything else (mostly )?fine/.test(t))KEYS.forEach(k=>{if(dims[k].why==="Not mentioned")dims[k]={best:0,levels:[0,1],why:"Described as sharp"}});
+  // keep rule R2 satisfiable: EP at least as impaired as WM
+  if(dims.EP.best<dims.WM.best){dims.EP.best=dims.WM.best;if(!dims.EP.levels.includes(dims.EP.best))dims.EP.levels.push(dims.EP.best)}
+  return {summary:"Keyword reading of your description (Claude isn't connected to this page).",dims};
+}
+
+function recommend(reading){
+  const D=KEYS.map(k=>reading.dims[k]);
+  const plaus=P.filter(p=>p.ok);
+  const dist=p=>p.r.reduce((a,x,i)=>a+Math.abs(x-D[i].best),0);
+  let fits=plaus.filter(p=>p.r.every((x,i)=>D[i].levels.includes(x)));
+  let relaxed=false;
+  if(!fits.length){relaxed=true;fits=plaus.slice().sort((a,b)=>dist(a)-dist(b)).slice(0,12)}
+  const byDist=fits.slice().sort((a,b)=>dist(a)-dist(b)||a.score-b.score);
+  const picks=[];const add=(p,role)=>{if(p&&!picks.some(x=>x.p.id===p.id))picks.push({p,role})};
+  add(byDist[0],"Closest match");
+  add(fits.slice().sort((a,b)=>a.score-b.score)[0],"Mildest fit");
+  add(fits.slice().sort((a,b)=>b.score-a.score)[0],"Most severe fit");
+  const ham=(a,b)=>a.r.filter((x,i)=>x!==b.r[i]).length;
+  while(picks.length<6&&picks.length<fits.length){
+    let best=null,bd=-1;
+    for(const p of byDist){if(picks.some(x=>x.p.id===p.id))continue;const d=Math.min(...picks.map(x=>ham(p,x.p)));if(d>bd){bd=d;best=p}}
+    if(!best)break;
+    const diff=KEYS.map((k,i)=>best.r[i]!==picks[0].p.r[i]?k:null).filter(Boolean);
+    add(best,"Contrast: "+diff.join(", "));
+  }
+  return {fits,picks,relaxed};
+}
+
+function showRec(reading,res,source){
+  const rec=$("rec");rec.hidden=false;
+  const reads=DIMS.map((d,i)=>{const r=reading.dims[d.k];
+    const lv=(i===5?[0,2]:[0,1,2]).map(l=>`<span class="chip${r.levels.includes(l)?" in":""}${r.best===l?" best":""}">${LV[l]}</span>`).join("");
+    return `<div class="rd"><b>${d.name}</b><span class="chips">${lv}</span><small></small></div>`}).join("");
+  rec.innerHTML=`<div><div class="eyebrow">${source}</div><p style="margin:4px 0 0" id="recSum"></p></div>
+  <div class="reading">${reads}</div>
+  <div><div class="eyebrow" style="margin-bottom:6px">${res.relaxed?"No plausible profile fits every range. Nearest plausible profiles:":res.fits.length+" plausible profiles fit. Suggested test set:"}</div>
+  <div class="picks" id="picks"></div></div>`;
+  $("recSum").textContent=reading.summary;
+  rec.querySelectorAll(".rd small").forEach((el,i)=>el.textContent=reading.dims[KEYS[i]].why);
+  $("picks").innerHTML=res.picks.map(({p,role})=>`<button class="item pick" data-id="${p.id}"><span class="num">${p.id}</span>${strip(p.r)}<span class="pat">${p.pat} · score ${p.score}</span><span class="role"></span></button>`).join("");
+  $("picks").querySelectorAll(".role").forEach((el,i)=>el.textContent=res.picks[i].role);
+  $("picks").querySelectorAll(".item").forEach(b=>b.addEventListener("click",()=>{selId=b.dataset.id;set="P";render();document.getElementById("ex-h").scrollIntoView({behavior:"smooth"})}));
+  fit=new Set(res.fits.map(p=>p.id));set="P";pins={};selId=null;render();
+}
+
+async function describe(){
+  const desc=$("desc").value.trim();
+  if(!desc){$("status").textContent="Write a line about the person first.";return}
+  $("go").disabled=true;$("status").textContent="Thinking...";
+  try{
+    let reading,source;
+    if(CLAUDE_PROXY_URL){
+      ctl=new AbortController();$("stop").hidden=false;
+      try{reading=clean(await askClaude(promptFor(desc),ctl.signal));source="Claude's reading of your description"}
+      catch(e){
+        if(e?.name==="AbortError"){$("status").textContent="Stopped.";return}
+        if(e?.code==="rate_limited"){$("status").textContent="Too many requests right now. Try again in a minute.";return}
+        if(e?.code==="invalid_json"){$("status").textContent="Claude's answer couldn't be read. Try again, or rephrase.";return}
+        // network or server trouble: fall through to the keyword reading
+      }
+    }
+    if(!reading){reading=keywordRead(desc);source="Quick keyword reading"}
+    const res=recommend(reading);showRec(reading,res,source);
+    $("status").textContent=res.fits.length+" profiles shown in the explorer below.";
+  }finally{$("go").disabled=false;$("stop").hidden=true;ctl=null}
+}
+$("go").addEventListener("click",describe);
+$("stop").addEventListener("click",()=>ctl?.abort());
+$("desc").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey))describe()});
+document.querySelectorAll(".ex").forEach(b=>b.addEventListener("click",()=>{$("desc").value=b.textContent;$("desc").focus()}));
+
+render();
+</script>
+</body>
+</html>

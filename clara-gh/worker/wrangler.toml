@@ -1,0 +1,7 @@
+name = "clara-persona-proxy"
+main = "worker.js"
+compatibility_date = "2026-06-01"
+
+[vars]
+# Your GitHub Pages address, e.g. "https://yourname.github.io". Comma-separate several.
+ALLOWED_ORIGIN = "https://YOUR-USERNAME.github.io"
