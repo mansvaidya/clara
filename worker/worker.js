@@ -17,8 +17,8 @@ const VOICES = {
   line:        { env: "VOICE_LINE",        id: "EXAVITQu4vr4xnSDxMaL", speed: 1.0,  note: "pharmacy line: calm, clear American female (default voice)" },
   staff:       { env: "VOICE_STAFF",       id: "iP95p4xoKVk53GoZ742B", speed: 1.0,  note: "pharmacy staff member: warm American male (default voice)" },
   younger:     { env: "VOICE_YOUNGER",     id: "cgSgspJ2msm6clMCkdW9", speed: 1.05, note: "the 35-year-old caller: natural young American female (default voice)" },
-  older_woman: { env: "VOICE_OLDER_WOMAN", id: "xy6Sbe8D4LZMgYJkWyYA", fallback: "ThT5KcBeYPX3keUQqHPh", speed: 0.9, note: "older woman, 70s, slow and warm (Voice Library: The Wise Grandmother)" },
-  older_man:   { env: "VOICE_OLDER_MAN",   id: "wAGzRVkxKEs8La0lmdrE", fallback: "pqHfZKP75CvOlQylNhV4", speed: 0.9, note: "older man, deep and mature American (Voice Library: Sully)" },
+  older_woman: { env: "VOICE_OLDER_WOMAN", id: "wGcFBfKz5yUQqhqr0mVy", fallback: "ThT5KcBeYPX3keUQqHPh", speed: 0.9, note: "older woman (Maria Moody)" },
+  older_man:   { env: "VOICE_OLDER_MAN",   id: "0lp4RIz96WD1RUtvEu3Q", fallback: "pqHfZKP75CvOlQylNhV4", speed: 0.9, note: "older man (Grandfather Joe)" },
 };
 const TTS_MODEL_DEFAULT = "eleven_flash_v2_5"; // fast and cheaper per character; set TTS_MODEL to "eleven_v4_turbo" for richer voices
 const MAX_TTS_CHARS = 800;
