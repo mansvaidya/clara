@@ -73,8 +73,8 @@ Voices used (all can be swapped in `worker/wrangler.toml` with a voice ID from E
 | Pharmacy line | Sarah (`EXAVITQu4vr4xnSDxMaL`) | ElevenLabs default voice; may be served by its newer replacement |
 | Pharmacy staff | Chris (`iP95p4xoKVk53GoZ742B`) | Default voice |
 | 35-year-old caller | Jessica (`cgSgspJ2msm6clMCkdW9`) | Default voice, spoken slightly faster |
-| Older woman | The Wise Grandmother (`xy6Sbe8D4LZMgYJkWyYA`) | Voice Library; needs a paid ElevenLabs plan. Falls back to Dorothy's replacement |
-| Older man | Sully (`wAGzRVkxKEs8La0lmdrE`) | Voice Library; needs a paid plan. Falls back to Bill's replacement |
+| Older woman | Maria Moody (`wGcFBfKz5yUQqhqr0mVy`)
+| Older man | Grandfather Joe (`0lp4RIz96WD1RUtvEu3Q`)
 
 The **Check the voices** button in Try a call plays one line per role and shows whether each came from ElevenLabs (with the voice ID used) or from the browser, which makes a missing key or an unavailable Voice Library voice easy to spot. Without ElevenLabs, each role still gets a different browser voice where the browser has several.
 
