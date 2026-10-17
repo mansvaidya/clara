@@ -32,7 +32,7 @@ GATE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>CLARA: Cognitive Persona Profiles</title>
+<title>CLARA</title>
 <style>
 :root{--bg:#fff;--fg:#111;--muted:#666;--hair:#d6d6d6;--accent:#e3000f;--accent-ink:#fff}
 @media (prefers-color-scheme:dark){:root{--bg:#0d0d0d;--fg:#f2f2f2;--muted:#9a9a9a;--hair:#333;--accent:#ff3b30;--accent-ink:#0d0d0d;color-scheme:dark}}
@@ -54,7 +54,7 @@ button:disabled{opacity:.6}
 <body>
 <form id="gate">
   <div class="crumb">CLARA / Personas</div>
-  <h1>CLARA: Cognitive Persona Profiles</h1>
+  <h1>CLARA</h1>
   <label for="pw">Password</label>
   <input id="pw" type="password" autocomplete="current-password" autofocus required>
   <button id="go" type="submit">Open</button>

@@ -36,8 +36,9 @@ async function speak(env, voiceName, text) {
   const key = new Request("https://tts-cache.clara/" + (await sha256([voiceName, ids[0], model, v.speed, text].join("|"))));
   const hit = await cache.match(key);
   if (hit) return hit;
-  let last;
+  let last, used;
   for (const id of ids) {
+    used = id;
     last = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${id}?output_format=mp3_44100_64`, {
       method: "POST",
       headers: { "content-type": "application/json", "xi-api-key": env.ELEVENLABS_API_KEY, accept: "audio/mpeg" },
@@ -47,7 +48,7 @@ async function speak(env, voiceName, text) {
   }
   if (!last.ok) return last;
   const audio = new Response(await last.arrayBuffer(), {
-    headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000" },
+    headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000", "x-voice-id": used },
   });
   await cache.put(key, audio.clone()); // the same line in the same voice is only paid for once
   return audio;
@@ -142,7 +143,7 @@ export default {
       if (!text || text.length > MAX_TTS_CHARS) return reply("Text missing or too long", 400, "text/plain");
       const audio = await speak(env, voice, text);
       if (!audio.ok) return reply(JSON.stringify({ error: audio.status }), audio.status === 429 ? 429 : 502);
-      return new Response(audio.body, { headers: { ...cors, "content-type": "audio/mpeg" } });
+      return new Response(audio.body, { headers: { ...cors, "content-type": "audio/mpeg", "x-voice-id": audio.headers.get("x-voice-id") || "", "Access-Control-Expose-Headers": "x-voice-id" } });
     }
 
     if (path === "" || path === "/claude") {
