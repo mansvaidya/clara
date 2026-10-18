@@ -31,12 +31,15 @@ async function sha256(text) {
 async function speak(env, voiceName, text) {
   const v = VOICES[voiceName];
   const model = env.TTS_MODEL || TTS_MODEL_DEFAULT;
-  const ids = [env[v.env] || v.id, v.fallback].filter(Boolean);
+  const wanted = (env[v.env] || v.id).trim();
+  const ids = [wanted, v.fallback].filter(Boolean);
   const cache = caches.default;
-  const key = new Request("https://tts-cache.clara/" + (await sha256([voiceName, ids[0], model, v.speed, text].join("|"))));
+  // The key names the voice actually wanted; audio from a fallback voice is never stored under it,
+  // so once the wanted voice works it is used straight away.
+  const key = new Request("https://tts-cache.clara/v2/" + (await sha256([voiceName, wanted, model, v.speed, text].join("|"))));
   const hit = await cache.match(key);
   if (hit) return hit;
-  let last, used;
+  let last, used, note = "";
   for (const id of ids) {
     used = id;
     last = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${id}?output_format=mp3_44100_64`, {
@@ -45,12 +48,18 @@ async function speak(env, voiceName, text) {
       body: JSON.stringify({ text, model_id: model, voice_settings: { stability: 0.5, similarity_boost: 0.75, speed: v.speed } }),
     });
     if (last.ok) break;
+    if (id === wanted) {
+      // Keep ElevenLabs' reason so the page can show why the wanted voice wasn't used.
+      let detail = "";
+      try { const j = await last.clone().json(); detail = j?.detail?.status || j?.detail?.message || j?.detail || ""; } catch {}
+      note = `${wanted} refused (${last.status}${detail ? ": " + String(detail).slice(0, 120) : ""})`;
+    }
   }
-  if (!last.ok) return last;
+  if (!last.ok) { const r = new Response(null, { status: last.status }); r.note = note; return r; }
   const audio = new Response(await last.arrayBuffer(), {
-    headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000", "x-voice-id": used },
+    headers: { "content-type": "audio/mpeg", "cache-control": "public, max-age=2592000", "x-voice-id": used, "x-voice-note": note.replace(/[^\x20-\x7E]/g, " ") },
   });
-  await cache.put(key, audio.clone()); // the same line in the same voice is only paid for once
+  if (used === wanted) await cache.put(key, audio.clone()); // the same line in the same voice is only paid for once
   return audio;
 }
 
@@ -143,7 +152,7 @@ export default {
       if (!text || text.length > MAX_TTS_CHARS) return reply("Text missing or too long", 400, "text/plain");
       const audio = await speak(env, voice, text);
       if (!audio.ok) return reply(JSON.stringify({ error: audio.status }), audio.status === 429 ? 429 : 502);
-      return new Response(audio.body, { headers: { ...cors, "content-type": "audio/mpeg", "x-voice-id": audio.headers.get("x-voice-id") || "", "Access-Control-Expose-Headers": "x-voice-id" } });
+      return new Response(audio.body, { headers: { ...cors, "content-type": "audio/mpeg", "x-voice-id": audio.headers.get("x-voice-id") || "", "x-voice-note": audio.headers.get("x-voice-note") || "", "Access-Control-Expose-Headers": "x-voice-id, x-voice-note" } });
     }
 
     if (path === "" || path === "/claude") {
