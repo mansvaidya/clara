@@ -4,7 +4,7 @@ compatibility_date = "2026-06-01"
 
 [vars]
 # Your GitHub Pages address, e.g. "https://yourname.github.io". Comma-separate several. 
-ALLOWED_ORIGIN = "https://mansvaidya.github.io/clara"
+ALLOWED_ORIGIN = "https://mansvaidya.github.io"
 
 # Optional: swap any ElevenLabs voice by pasting its voice ID (ElevenLabs > Voices > a voice > "Copy voice ID").
 # VOICE_LINE = ""
